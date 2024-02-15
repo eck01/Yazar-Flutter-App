@@ -12,6 +12,12 @@ dependencies:
 
   cupertino_icons: ^1.0.2
 
+  # core
+  path: ^1.8.3
+
+  # local database
+  sqflite: ^2.3.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
