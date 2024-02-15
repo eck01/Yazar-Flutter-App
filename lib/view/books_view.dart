@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:yazar/model/book_model.dart';
 
 class BooksView extends StatefulWidget {
   const BooksView({super.key});
@@ -34,5 +35,40 @@ class _BooksViewState extends State<BooksView> {
     );
   }
 
-  void _floatingActionButtonOnPressed() {}
+  Future<void> _floatingActionButtonOnPressed() async {
+    String? name = await _buildDialog();
+    if (name != null) {
+      BookModel book = BookModel(name, DateTime.now());
+    }
+  }
+
+  Future<String?> _buildDialog() {
+    return showDialog(
+      context: context,
+      builder: (context) {
+        String? text;
+
+        return AlertDialog(
+          title: const Text('Kitap Ekle'),
+          content: TextField(onChanged: (value) {
+            text = value;
+          }),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('İptal'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context, text);
+              },
+              child: const Text('Tamam'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 }
