@@ -1,5 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'package:yazar/model/book_model.dart';
 
 class LocalDatabase {
   LocalDatabase._privateConstructor();
@@ -31,7 +32,7 @@ class LocalDatabase {
   }
 
   Future<void> _openDatabaseOnCreate(Database database, int version) async {
-    await database.query(
+    await database.execute(
       '''
         CREATE TABLE $_tableBooks (
           $_columnId	INTEGER NOT NULL UNIQUE PRIMARY KEY AUTOINCREMENT,
@@ -40,5 +41,59 @@ class LocalDatabase {
         );
       ''',
     );
+  }
+
+  Future<int> create(BookModel book) async {
+    Database? database = await _fetchDatabase();
+
+    if (database != null) {
+      return await database.insert(_tableBooks, book.toMap());
+    } else {
+      return -1;
+    }
+  }
+
+  Future<List<BookModel>> read() async {
+    Database? database = await _fetchDatabase();
+    List<BookModel> list = [];
+
+    if (database != null) {
+      List<Map<String, dynamic>> dataList = await database.query(_tableBooks);
+      for (Map<String, dynamic> dataMap in dataList) {
+        BookModel book = BookModel.fromMap(dataMap);
+        list.add(book);
+      }
+    }
+
+    return list;
+  }
+
+  Future<int> update(BookModel book) async {
+    Database? database = await _fetchDatabase();
+
+    if (database != null) {
+      return await database.update(
+        _tableBooks,
+        book.toMap(),
+        where: '$_columnId = ?',
+        whereArgs: [book.id],
+      );
+    } else {
+      return 0;
+    }
+  }
+
+  Future<int> delete(BookModel book) async {
+    Database? database = await _fetchDatabase();
+
+    if (database != null) {
+      return await database.delete(
+        _tableBooks,
+        where: '$_columnId = ?',
+        whereArgs: [book.id],
+      );
+    } else {
+      return 0;
+    }
   }
 }
