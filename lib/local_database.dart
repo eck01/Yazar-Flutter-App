@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:yazar/model/book_model.dart';
+import 'package:yazar/model/chapter_model.dart';
 
 class LocalDatabase {
   LocalDatabase._privateConstructor();
@@ -13,10 +14,17 @@ class LocalDatabase {
 
   Database? _database;
 
-  final String _tableBooks = 'books';
-  final String _columnId = 'id';
-  final String _columnName = 'name';
-  final String _columnPublicationYear = 'publicationYear';
+  final String _booksTable = 'books';
+  final String _booksId = 'id';
+  final String _booksName = 'name';
+  final String _booksPublicationYear = 'publicationYear';
+
+  final String _chaptersTable = 'chapters';
+  final String _chaptersId = 'id';
+  final String _chaptersBookId = 'bookId';
+  final String _chaptersTitle = 'title';
+  final String _chaptersContent = 'content';
+  final String _chaptersPublicationYear = 'publicationYear';
 
   Future<Database?> _fetchDatabase() async {
     if (_database == null) {
@@ -34,63 +42,134 @@ class LocalDatabase {
   Future<void> _openDatabaseOnCreate(Database database, int version) async {
     await database.execute(
       '''
-        CREATE TABLE $_tableBooks (
-          $_columnId	INTEGER NOT NULL UNIQUE PRIMARY KEY AUTOINCREMENT,
-          $_columnName	TEXT NOT NULL,
-          $_columnPublicationYear	INTEGER
+        CREATE TABLE $_booksTable (
+          $_booksId	INTEGER NOT NULL UNIQUE PRIMARY KEY AUTOINCREMENT,
+          $_booksName	TEXT NOT NULL,
+          $_booksPublicationYear	INTEGER
+        );
+      ''',
+    );
+    await database.execute(
+      '''
+        CREATE TABLE $_chaptersTable (
+          $_chaptersId INTEGER NOT NULL UNIQUE PRIMARY KEY AUTOINCREMENT,
+          $_chaptersBookId INTEGER NOT NULL,
+          $_chaptersTitle TEXT NOT NULL,
+          $_chaptersContent TEXT,
+          $_chaptersPublicationYear TEXT DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY("$_chaptersBookId") REFERENCES "$_booksTable"("$_booksId") ON UPDATE CASCADE ON DELETE CASCADE
         );
       ''',
     );
   }
 
-  Future<int> create(BookModel book) async {
+  Future<int> createBook(BookModel object) async {
     Database? database = await _fetchDatabase();
 
     if (database != null) {
-      return await database.insert(_tableBooks, book.toMap());
+      return await database.insert(_booksTable, object.toMap());
     } else {
       return -1;
     }
   }
 
-  Future<List<BookModel>> read() async {
+  Future<List<BookModel>> readBooks() async {
     Database? database = await _fetchDatabase();
     List<BookModel> list = [];
 
     if (database != null) {
-      List<Map<String, dynamic>> dataList = await database.query(_tableBooks);
+      List<Map<String, dynamic>> dataList = await database.query(_booksTable);
       for (Map<String, dynamic> dataMap in dataList) {
-        BookModel book = BookModel.fromMap(dataMap);
-        list.add(book);
+        BookModel object = BookModel.fromMap(dataMap);
+        list.add(object);
       }
     }
 
     return list;
   }
 
-  Future<int> update(BookModel book) async {
+  Future<int> updateBook(BookModel object) async {
     Database? database = await _fetchDatabase();
 
     if (database != null) {
       return await database.update(
-        _tableBooks,
-        book.toMap(),
-        where: '$_columnId = ?',
-        whereArgs: [book.id],
+        _booksTable,
+        object.toMap(),
+        where: '$_booksId = ?',
+        whereArgs: [object.id],
       );
     } else {
       return 0;
     }
   }
 
-  Future<int> delete(BookModel book) async {
+  Future<int> deleteBook(BookModel object) async {
     Database? database = await _fetchDatabase();
 
     if (database != null) {
       return await database.delete(
-        _tableBooks,
-        where: '$_columnId = ?',
-        whereArgs: [book.id],
+        _booksTable,
+        where: '$_booksId = ?',
+        whereArgs: [object.id],
+      );
+    } else {
+      return 0;
+    }
+  }
+
+  Future<int> createChapter(ChapterModel object) async {
+    Database? database = await _fetchDatabase();
+
+    if (database != null) {
+      return await database.insert(_chaptersTable, object.toMap());
+    } else {
+      return -1;
+    }
+  }
+
+  Future<List<ChapterModel>> readChapters(int bookId) async {
+    Database? database = await _fetchDatabase();
+    List<ChapterModel> list = [];
+
+    if (database != null) {
+      List<Map<String, dynamic>> dataList = await database.query(
+        _chaptersTable,
+        where: '$_chaptersBookId = ?',
+        whereArgs: [bookId],
+      );
+
+      for (Map<String, dynamic> dataMap in dataList) {
+        ChapterModel object = ChapterModel.fromMap(dataMap);
+        list.add(object);
+      }
+    }
+
+    return list;
+  }
+
+  Future<int> updateChapter(ChapterModel object) async {
+    Database? database = await _fetchDatabase();
+
+    if (database != null) {
+      return await database.update(
+        _chaptersTable,
+        object.toMap(),
+        where: '$_chaptersId = ?',
+        whereArgs: [object.id],
+      );
+    } else {
+      return 0;
+    }
+  }
+
+  Future<int> deleteChapter(ChapterModel object) async {
+    Database? database = await _fetchDatabase();
+
+    if (database != null) {
+      return await database.delete(
+        _chaptersTable,
+        where: '$_chaptersId = ?',
+        whereArgs: [object.id],
       );
     } else {
       return 0;

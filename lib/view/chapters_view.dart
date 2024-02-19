@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:yazar/local_database.dart';
 import 'package:yazar/model/book_model.dart';
-import 'package:yazar/view/chapters_view.dart';
+import 'package:yazar/model/chapter_model.dart';
 
-class BooksView extends StatefulWidget {
-  const BooksView({super.key});
+class ChaptersView extends StatefulWidget {
+  const ChaptersView(this._book, {super.key});
+
+  final BookModel _book;
 
   @override
-  State<BooksView> createState() => _BooksViewState();
+  State<ChaptersView> createState() => _ChaptersViewState();
 }
 
-class _BooksViewState extends State<BooksView> {
+class _ChaptersViewState extends State<ChaptersView> {
   final LocalDatabase _database = LocalDatabase();
-  List<BookModel> _books = [];
+  List<ChapterModel> _chapters = [];
 
   @override
   Widget build(BuildContext context) {
@@ -25,116 +27,109 @@ class _BooksViewState extends State<BooksView> {
 
   AppBar _buildAppBar() {
     return AppBar(
-      title: const Text('Kitaplar'),
+      title: Text(widget._book.name),
     );
   }
 
   Widget _buildBody() {
     return FutureBuilder(
-      future: _readBooks(),
+      future: readChapters(),
       builder: _buildListView,
     );
   }
 
-  Future<void> _readBooks() async {
-    _books = await _database.readBooks();
+  Future<void> readChapters() async {
+    int? bookId = widget._book.id;
+    if (bookId != null) {
+      _chapters = await _database.readChapters(bookId);
+    }
   }
 
   Widget _buildListView(BuildContext context, AsyncSnapshot<void> snapshot) {
     return ListView.builder(
-      itemCount: _books.length,
+      itemCount: _chapters.length,
       itemBuilder: _buildListItem,
     );
   }
 
   Widget _buildListItem(BuildContext context, int index) {
     return ListTile(
-      leading: CircleAvatar(child: Text(_books[index].id.toString())),
-      title: Text(_books[index].name),
+      leading: CircleAvatar(child: Text(_chapters[index].id.toString())),
+      title: Text(_chapters[index].title),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           IconButton(
             onPressed: () {
-              _updateBook(index);
+              _updateChapter(index);
             },
             icon: const Icon(Icons.edit),
           ),
           IconButton(
             onPressed: () {
-              _deleteBook(index);
+              _deleteChapter(index);
             },
             icon: const Icon(Icons.delete),
           ),
         ],
       ),
-      onTap: () {
-        _openView(_books[index]);
-      },
     );
   }
 
-  Future<void> _updateBook(int index) async {
-    String? text = await _buildDialog('Kitap Güncelle');
+  Future<void> _updateChapter(int index) async {
+    String? text = await _buildDialog('Bölüm Güncelle');
 
     if (text != null) {
-      BookModel object = _books[index];
-      object.name = text;
-      int result = await _database.updateBook(object);
+      ChapterModel object = _chapters[index];
+      object.title = text;
+      int result = await _database.updateChapter(object);
       if (result > 0) {
         setState(() {});
       }
     }
   }
 
-  Future<void> _deleteBook(int index) async {
-    BookModel object = _books[index];
-    int result = await _database.deleteBook(object);
+  Future<void> _deleteChapter(int index) async {
+    ChapterModel object = _chapters[index];
+    int result = await _database.deleteChapter(object);
     if (result > 0) {
       setState(() {});
     }
   }
 
-  void _openView(BookModel object) {
-    MaterialPageRoute route = MaterialPageRoute(
-      builder: (context) {
-        return ChaptersView(object);
-      },
-    );
-
-    Navigator.push(context, route);
-  }
-
   Widget _buildFloatingActionButton() {
     return FloatingActionButton(
-      onPressed: _createBook,
+      onPressed: _createChapter,
       child: const Icon(Icons.add),
     );
   }
 
-  Future<void> _createBook() async {
-    String? text = await _buildDialog('Kitap Ekle');
+  Future<void> _createChapter() async {
+    int? bookId = widget._book.id;
+    String? text = await _buildDialog('Bölüm Ekle');
 
-    if (text != null) {
-      BookModel object = BookModel(text, DateTime.now());
-      int result = await _database.createBook(object);
+    if (bookId != null && text != null) {
+      ChapterModel object = ChapterModel(bookId, text);
+      int result = await _database.createChapter(object);
       if (result > -1) {
         setState(() {});
       }
     }
   }
 
-  Future<String?> _buildDialog(String title) {
-    return showDialog(
+  Future<String?> _buildDialog(String title) async {
+    return await showDialog(
       context: context,
       builder: (context) {
         String? text;
 
         return AlertDialog(
           title: Text(title),
-          content: TextField(onChanged: (value) {
-            text = value;
-          }),
+          content: TextField(
+            onChanged: (String value) {
+              text = value;
+            },
+          ),
           actions: [
             TextButton(
               onPressed: () {
