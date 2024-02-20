@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:yazar/local_database.dart';
 import 'package:yazar/model/book_model.dart';
 import 'package:yazar/model/chapter_model.dart';
+import 'package:yazar/view/chapter_detail_view.dart';
 
 class ChaptersView extends StatefulWidget {
   const ChaptersView(this._book, {super.key});
@@ -73,6 +74,9 @@ class _ChaptersViewState extends State<ChaptersView> {
           ),
         ],
       ),
+      onTap: () {
+        _openView(_chapters[index]);
+      },
     );
   }
 
@@ -95,6 +99,16 @@ class _ChaptersViewState extends State<ChaptersView> {
     if (result > 0) {
       setState(() {});
     }
+  }
+
+  void _openView(ChapterModel object) {
+    MaterialPageRoute route = MaterialPageRoute(
+      builder: (context) {
+        return ChapterDetailView(object);
+      },
+    );
+
+    Navigator.push(context, route);
   }
 
   Widget _buildFloatingActionButton() {
