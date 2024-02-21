@@ -18,6 +18,7 @@ class LocalDatabase {
   final String _booksId = 'id';
   final String _booksName = 'name';
   final String _booksPublicationYear = 'publicationYear';
+  final String _bookCategory = 'category';
 
   final String _chaptersTable = 'chapters';
   final String _chaptersId = 'id';
@@ -32,8 +33,9 @@ class LocalDatabase {
       String databasePath = join(filePath, 'yazar.db');
       _database = await openDatabase(
         databasePath,
-        version: 1,
+        version: 2,
         onCreate: _openDatabaseOnCreate,
+        onUpgrade: _openDatabaseOnUpgrade,
       );
     }
     return _database;
@@ -45,7 +47,8 @@ class LocalDatabase {
         CREATE TABLE $_booksTable (
           $_booksId	INTEGER NOT NULL UNIQUE PRIMARY KEY AUTOINCREMENT,
           $_booksName	TEXT NOT NULL,
-          $_booksPublicationYear	INTEGER
+          $_booksPublicationYear	INTEGER,
+          $_bookCategory INTEGER DEFAULT 0
         );
       ''',
     );
@@ -61,6 +64,16 @@ class LocalDatabase {
         );
       ''',
     );
+  }
+
+  Future<void> _openDatabaseOnUpgrade(Database database, int oldVersion, int newVersion) async {
+    List<String> sqlList = [
+      'ALTER TABLE $_booksTable ADD COLUMN $_bookCategory INTEGER DEFAULT 0',
+    ];
+
+    for (int index = oldVersion - 1; index < newVersion - 1; index++) {
+      await database.execute(sqlList[index]);
+    }
   }
 
   Future<int> createBook(BookModel object) async {

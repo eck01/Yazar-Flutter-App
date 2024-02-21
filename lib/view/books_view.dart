@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:yazar/constants.dart';
 import 'package:yazar/local_database.dart';
 import 'package:yazar/model/book_model.dart';
 import 'package:yazar/view/chapters_view.dart';
@@ -51,6 +52,7 @@ class _BooksViewState extends State<BooksView> {
     return ListTile(
       leading: CircleAvatar(child: Text(_books[index].id.toString())),
       title: Text(_books[index].name),
+      subtitle: Text(Constants.categories[_books[index].category] ?? ''),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -75,14 +77,20 @@ class _BooksViewState extends State<BooksView> {
   }
 
   Future<void> _updateBook(int index) async {
-    String? text = await _buildDialog('Kitap Güncelle');
+    BookModel object = _books[index];
+    List<dynamic>? response = await _buildDialog('Kitap Güncelle', bookName: object.name, bookCategory: object.category);
 
-    if (text != null) {
-      BookModel object = _books[index];
-      object.name = text;
-      int result = await _database.updateBook(object);
-      if (result > 0) {
-        setState(() {});
+    if (response != null && response.length > 1) {
+      String text = response[0];
+      int index = response[1];
+
+      if (text != object.name || index != object.category) {
+        object.name = text;
+        object.category = index;
+        int result = await _database.updateBook(object);
+        if (result > 0) {
+          setState(() {});
+        }
       }
     }
   }
@@ -113,10 +121,13 @@ class _BooksViewState extends State<BooksView> {
   }
 
   Future<void> _createBook() async {
-    String? text = await _buildDialog('Kitap Ekle');
+    List<dynamic>? response = await _buildDialog('Kitap Ekle');
 
-    if (text != null) {
-      BookModel object = BookModel(text, DateTime.now());
+    if (response != null && response.length > 1) {
+      String text = response[0];
+      int index = response[1];
+
+      BookModel object = BookModel(text, DateTime.now(), index);
       int result = await _database.createBook(object);
       if (result > -1) {
         setState(() {});
@@ -124,17 +135,50 @@ class _BooksViewState extends State<BooksView> {
     }
   }
 
-  Future<String?> _buildDialog(String title) {
-    return showDialog(
+  Future<List<dynamic>?> _buildDialog(String title, {String bookName = '', int bookCategory = 0}) {
+    return showDialog<List<dynamic>?>(
       context: context,
       builder: (context) {
-        String? text;
+        TextEditingController controller = TextEditingController(text: bookName);
+        int category = bookCategory;
 
         return AlertDialog(
           title: Text(title),
-          content: TextField(onChanged: (value) {
-            text = value;
-          }),
+          content: StatefulBuilder(
+            builder: (BuildContext context, void Function(void Function()) setState) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: controller,
+                  ),
+                  const SizedBox(height: 24.0),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Kategori:'),
+                      DropdownButton<int>(
+                        value: category,
+                        items: Constants.categories.keys.map((index) {
+                          return DropdownMenuItem<int>(
+                            value: index,
+                            child: Text(Constants.categories[index] ?? ''),
+                          );
+                        }).toList(),
+                        onChanged: (int? value) {
+                          if (value != null) {
+                            setState(() {
+                              category = value;
+                            });
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            },
+          ),
           actions: [
             TextButton(
               onPressed: () {
@@ -144,7 +188,7 @@ class _BooksViewState extends State<BooksView> {
             ),
             TextButton(
               onPressed: () {
-                Navigator.pop(context, text);
+                Navigator.pop(context, [controller.text.trim(), category]);
               },
               child: const Text('Tamam'),
             ),
