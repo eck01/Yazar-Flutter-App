@@ -14,6 +14,16 @@ class BooksView extends StatefulWidget {
 class _BooksViewState extends State<BooksView> {
   final LocalDatabase _database = LocalDatabase();
   List<BookModel> _books = [];
+  int _category = -1;
+  final List<int> _categories = [-1];
+  final List<int> _checkboxList = [];
+
+  @override
+  void initState() {
+    super.initState();
+
+    _categories.addAll(Constants.categories.keys);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +37,20 @@ class _BooksViewState extends State<BooksView> {
   AppBar _buildAppBar() {
     return AppBar(
       title: const Text('Kitaplar'),
+      actions: [
+        IconButton(
+          onPressed: _deleteBooks,
+          icon: const Icon(Icons.delete),
+        ),
+      ],
     );
+  }
+
+  Future<void> _deleteBooks() async {
+    int result = await _database.deleteBooks(_checkboxList);
+    if (result > 0) {
+      setState(() {});
+    }
   }
 
   Widget _buildBody() {
@@ -38,13 +61,47 @@ class _BooksViewState extends State<BooksView> {
   }
 
   Future<void> _readBooks() async {
-    _books = await _database.readBooks();
+    _books = await _database.readBooks(_category);
   }
 
   Widget _buildListView(BuildContext context, AsyncSnapshot<void> snapshot) {
-    return ListView.builder(
-      itemCount: _books.length,
-      itemBuilder: _buildListItem,
+    return Column(
+      children: [
+        _buildCategoryButton(),
+        Expanded(
+          child: ListView.builder(
+            itemCount: _books.length,
+            itemBuilder: _buildListItem,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCategoryButton() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        const Text('Kategori:'),
+        DropdownButton(
+          value: _category,
+          items: _categories.map((index) {
+            return DropdownMenuItem(
+              value: index,
+              child: Text(
+                index == -1 ? 'Hepsi' : Constants.categories[index] ?? '',
+              ),
+            );
+          }).toList(),
+          onChanged: (value) {
+            setState(() {
+              if (value != null) {
+                _category = value;
+              }
+            });
+          },
+        ),
+      ],
     );
   }
 
@@ -62,11 +119,22 @@ class _BooksViewState extends State<BooksView> {
             },
             icon: const Icon(Icons.edit),
           ),
-          IconButton(
-            onPressed: () {
-              _deleteBook(index);
+          Checkbox(
+            value: _checkboxList.contains(_books[index].id),
+            onChanged: (bool? state) {
+              if (state != null) {
+                int? id = _books[index].id;
+                if (id != null) {
+                  setState(() {
+                    if (state) {
+                      _checkboxList.add(id);
+                    } else {
+                      _checkboxList.remove(id);
+                    }
+                  });
+                }
+              }
             },
-            icon: const Icon(Icons.delete),
           ),
         ],
       ),
@@ -92,14 +160,6 @@ class _BooksViewState extends State<BooksView> {
           setState(() {});
         }
       }
-    }
-  }
-
-  Future<void> _deleteBook(int index) async {
-    BookModel object = _books[index];
-    int result = await _database.deleteBook(object);
-    if (result > 0) {
-      setState(() {});
     }
   }
 

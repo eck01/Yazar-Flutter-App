@@ -18,7 +18,7 @@ class LocalDatabase {
   final String _booksId = 'id';
   final String _booksName = 'name';
   final String _booksPublicationYear = 'publicationYear';
-  final String _bookCategory = 'category';
+  final String _booksCategory = 'category';
 
   final String _chaptersTable = 'chapters';
   final String _chaptersId = 'id';
@@ -48,7 +48,7 @@ class LocalDatabase {
           $_booksId	INTEGER NOT NULL UNIQUE PRIMARY KEY AUTOINCREMENT,
           $_booksName	TEXT NOT NULL,
           $_booksPublicationYear	INTEGER,
-          $_bookCategory INTEGER DEFAULT 0
+          $_booksCategory INTEGER DEFAULT 0
         );
       ''',
     );
@@ -68,7 +68,7 @@ class LocalDatabase {
 
   Future<void> _openDatabaseOnUpgrade(Database database, int oldVersion, int newVersion) async {
     List<String> sqlList = [
-      'ALTER TABLE $_booksTable ADD COLUMN $_bookCategory INTEGER DEFAULT 0',
+      'ALTER TABLE $_booksTable ADD COLUMN $_booksCategory INTEGER DEFAULT 0',
     ];
 
     for (int index = oldVersion - 1; index < newVersion - 1; index++) {
@@ -86,12 +86,25 @@ class LocalDatabase {
     }
   }
 
-  Future<List<BookModel>> readBooks() async {
+  Future<List<BookModel>> readBooks(int index) async {
     Database? database = await _fetchDatabase();
+    String? sqlWhere;
+    List<dynamic>? sqlWhereArgs;
     List<BookModel> list = [];
 
+    if (index >= 0) {
+      sqlWhere = '$_booksCategory = ?';
+      sqlWhereArgs = [index];
+    }
+
     if (database != null) {
-      List<Map<String, dynamic>> dataList = await database.query(_booksTable);
+      List<Map<String, dynamic>> dataList = await database.query(
+        _booksTable,
+        where: sqlWhere,
+        whereArgs: sqlWhereArgs,
+        orderBy: '$_booksName collate localized',
+      );
+
       for (Map<String, dynamic> dataMap in dataList) {
         BookModel object = BookModel.fromMap(dataMap);
         list.add(object);
@@ -116,14 +129,24 @@ class LocalDatabase {
     }
   }
 
-  Future<int> deleteBook(BookModel object) async {
+  Future<int> deleteBooks(List<int> indexList) async {
     Database? database = await _fetchDatabase();
 
-    if (database != null) {
+    if (database != null && indexList.isNotEmpty) {
+      String sqlWhere = '$_booksId in (';
+
+      for (int i = 0; i < indexList.length; i++) {
+        if (i != indexList.length - 1) {
+          sqlWhere += '?,';
+        } else {
+          sqlWhere += '?)';
+        }
+      }
+
       return await database.delete(
         _booksTable,
-        where: '$_booksId = ?',
-        whereArgs: [object.id],
+        where: sqlWhere,
+        whereArgs: indexList,
       );
     } else {
       return 0;
