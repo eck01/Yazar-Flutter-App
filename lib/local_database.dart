@@ -1,7 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import 'package:yazar/model/book_model.dart';
-import 'package:yazar/model/chapter_model.dart';
+import 'package:yazar/model/book.dart';
+import 'package:yazar/model/chapter.dart';
 
 class LocalDatabase {
   LocalDatabase._privateConstructor();
@@ -76,21 +76,21 @@ class LocalDatabase {
     }
   }
 
-  Future<int> createBook(BookModel object) async {
+  Future<int> createBook(Book object) async {
     Database? database = await _fetchDatabase();
 
     if (database != null) {
-      return await database.insert(_booksTable, object.toMap());
+      return await database.insert(_booksTable, _objectToMap(object));
     } else {
       return -1;
     }
   }
 
-  Future<List<BookModel>> readBooks(int index) async {
+  Future<List<Book>> readBooks(int index) async {
     Database? database = await _fetchDatabase();
     String? sqlWhere;
     List<dynamic>? sqlWhereArgs;
-    List<BookModel> list = [];
+    List<Book> list = [];
 
     if (index >= 0) {
       sqlWhere = '$_booksCategory = ?';
@@ -106,7 +106,7 @@ class LocalDatabase {
       );
 
       for (Map<String, dynamic> dataMap in dataList) {
-        BookModel object = BookModel.fromMap(dataMap);
+        Book object = _mapToObject(dataMap);
         list.add(object);
       }
     }
@@ -114,19 +114,36 @@ class LocalDatabase {
     return list;
   }
 
-  Future<int> updateBook(BookModel object) async {
+  Book _mapToObject(Map<String, dynamic> map) {
+    int? dateTime = map['publicationYear'];
+    if (dateTime != null) {
+      map['pubkicationYear'] = DateTime.fromMillisecondsSinceEpoch(dateTime);
+    }
+    return Book.fromMap(map);
+  }
+
+  Future<int> updateBook(Book object) async {
     Database? database = await _fetchDatabase();
 
     if (database != null) {
       return await database.update(
         _booksTable,
-        object.toMap(),
+        _objectToMap(object),
         where: '$_booksId = ?',
         whereArgs: [object.id],
       );
     } else {
       return 0;
     }
+  }
+
+  Map<String, dynamic> _objectToMap(Book object) {
+    Map<String, dynamic> dataMap = object.toMap();
+    DateTime? dateTime = dataMap['publicationYear'];
+    if (dateTime != null) {
+      dataMap['publicationYear'] = dateTime.millisecondsSinceEpoch;
+    }
+    return dataMap;
   }
 
   Future<int> deleteBooks(List<int> indexList) async {
@@ -153,7 +170,7 @@ class LocalDatabase {
     }
   }
 
-  Future<int> createChapter(ChapterModel object) async {
+  Future<int> createChapter(Chapter object) async {
     Database? database = await _fetchDatabase();
 
     if (database != null) {
@@ -163,9 +180,9 @@ class LocalDatabase {
     }
   }
 
-  Future<List<ChapterModel>> readChapters(int bookId) async {
+  Future<List<Chapter>> readChapters(int bookId) async {
     Database? database = await _fetchDatabase();
-    List<ChapterModel> list = [];
+    List<Chapter> list = [];
 
     if (database != null) {
       List<Map<String, dynamic>> dataList = await database.query(
@@ -175,7 +192,7 @@ class LocalDatabase {
       );
 
       for (Map<String, dynamic> dataMap in dataList) {
-        ChapterModel object = ChapterModel.fromMap(dataMap);
+        Chapter object = Chapter.fromMap(dataMap);
         list.add(object);
       }
     }
@@ -183,7 +200,7 @@ class LocalDatabase {
     return list;
   }
 
-  Future<int> updateChapter(ChapterModel object) async {
+  Future<int> updateChapter(Chapter object) async {
     Database? database = await _fetchDatabase();
 
     if (database != null) {
@@ -198,7 +215,7 @@ class LocalDatabase {
     }
   }
 
-  Future<int> deleteChapter(ChapterModel object) async {
+  Future<int> deleteChapter(Chapter object) async {
     Database? database = await _fetchDatabase();
 
     if (database != null) {

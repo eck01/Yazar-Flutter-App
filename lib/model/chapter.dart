@@ -1,12 +1,12 @@
-class ChapterModel {
-  ChapterModel(this.bookId, this.title) : content = '';
+class Chapter {
+  Chapter(this.bookId, this.title) : content = '';
 
-  int? id;
+  dynamic id;
   int bookId;
   String title;
   String content;
 
-  ChapterModel.fromMap(Map<String, dynamic> map)
+  Chapter.fromMap(Map<String, dynamic> map)
       : id = map['id'],
         bookId = map['bookId'],
         title = map['title'],

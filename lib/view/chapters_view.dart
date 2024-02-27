@@ -1,21 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:yazar/local_database.dart';
-import 'package:yazar/model/book_model.dart';
-import 'package:yazar/model/chapter_model.dart';
-import 'package:yazar/view/chapter_detail_view.dart';
 
-class ChaptersView extends StatefulWidget {
-  const ChaptersView(this._book, {super.key});
-
-  final BookModel _book;
-
-  @override
-  State<ChaptersView> createState() => _ChaptersViewState();
-}
-
-class _ChaptersViewState extends State<ChaptersView> {
-  final LocalDatabase _database = LocalDatabase();
-  List<ChapterModel> _chapters = [];
+class ChaptersView extends StatelessWidget {
+  const ChaptersView({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -28,22 +14,15 @@ class _ChaptersViewState extends State<ChaptersView> {
 
   AppBar _buildAppBar() {
     return AppBar(
-      title: Text(widget._book.name),
+      title: Text(_book.name),
     );
   }
 
   Widget _buildBody() {
     return FutureBuilder(
-      future: readChapters(),
+      future: _readChapters(),
       builder: _buildListView,
     );
-  }
-
-  Future<void> readChapters() async {
-    int? bookId = widget._book.id;
-    if (bookId != null) {
-      _chapters = await _database.readChapters(bookId);
-    }
   }
 
   Widget _buildListView(BuildContext context, AsyncSnapshot<void> snapshot) {
@@ -80,86 +59,10 @@ class _ChaptersViewState extends State<ChaptersView> {
     );
   }
 
-  Future<void> _updateChapter(int index) async {
-    String? text = await _buildDialog('Bölüm Güncelle');
-
-    if (text != null) {
-      ChapterModel object = _chapters[index];
-      object.title = text;
-      int result = await _database.updateChapter(object);
-      if (result > 0) {
-        setState(() {});
-      }
-    }
-  }
-
-  Future<void> _deleteChapter(int index) async {
-    ChapterModel object = _chapters[index];
-    int result = await _database.deleteChapter(object);
-    if (result > 0) {
-      setState(() {});
-    }
-  }
-
-  void _openView(ChapterModel object) {
-    MaterialPageRoute route = MaterialPageRoute(
-      builder: (context) {
-        return ChapterDetailView(object);
-      },
-    );
-
-    Navigator.push(context, route);
-  }
-
   Widget _buildFloatingActionButton() {
     return FloatingActionButton(
       onPressed: _createChapter,
       child: const Icon(Icons.add),
-    );
-  }
-
-  Future<void> _createChapter() async {
-    int? bookId = widget._book.id;
-    String? text = await _buildDialog('Bölüm Ekle');
-
-    if (bookId != null && text != null) {
-      ChapterModel object = ChapterModel(bookId, text);
-      int result = await _database.createChapter(object);
-      if (result > -1) {
-        setState(() {});
-      }
-    }
-  }
-
-  Future<String?> _buildDialog(String title) async {
-    return await showDialog(
-      context: context,
-      builder: (context) {
-        String? text;
-
-        return AlertDialog(
-          title: Text(title),
-          content: TextField(
-            onChanged: (String value) {
-              text = value;
-            },
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: const Text('İptal'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context, text);
-              },
-              child: const Text('Tamam'),
-            ),
-          ],
-        );
-      },
     );
   }
 }

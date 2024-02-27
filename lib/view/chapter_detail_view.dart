@@ -1,14 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:yazar/local_database.dart';
-import 'package:yazar/model/chapter_model.dart';
 
 class ChapterDetailView extends StatelessWidget {
-  ChapterDetailView(this._object, {super.key});
-
-  final ChapterModel _object;
+  ChapterDetailView({super.key});
 
   final TextEditingController _controller = TextEditingController();
-  final LocalDatabase _database = LocalDatabase();
 
   @override
   Widget build(BuildContext context) {
@@ -28,11 +23,6 @@ class ChapterDetailView extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  Future<void> _updateContent() async {
-    _object.content = _controller.text;
-    await _database.updateChapter(_object);
   }
 
   Widget _buildBody() {
