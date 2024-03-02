@@ -115,11 +115,12 @@ class LocalDatabase {
   }
 
   Book _mapToObject(Map<String, dynamic> map) {
-    int? dateTime = map['publicationYear'];
+    Map<String, dynamic> dataMap = Map.from(map);
+    int? dateTime = dataMap['publicationYear'];
     if (dateTime != null) {
-      map['pubkicationYear'] = DateTime.fromMillisecondsSinceEpoch(dateTime);
+      dataMap['publicationYear'] = DateTime.fromMillisecondsSinceEpoch(dateTime);
     }
-    return Book.fromMap(map);
+    return Book.fromMap(dataMap);
   }
 
   Future<int> updateBook(Book object) async {

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:yazar/view_model/chapter_detail_view_model.dart';
 
 class ChapterDetailView extends StatelessWidget {
   ChapterDetailView({super.key});
@@ -8,25 +10,29 @@ class ChapterDetailView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _buildAppBar(),
-      body: _buildBody(),
+      appBar: _buildAppBar(context),
+      body: _buildBody(context),
     );
   }
 
-  AppBar _buildAppBar() {
+  AppBar _buildAppBar(BuildContext context) {
+    ChapterDetailViewModel viewModel = Provider.of<ChapterDetailViewModel>(context, listen: false);
     return AppBar(
-      title: Text(_object.title),
+      title: Text(viewModel.object.title),
       actions: [
         IconButton(
-          onPressed: _updateContent,
+          onPressed: () {
+            viewModel.updateContent(_controller.text);
+          },
           icon: const Icon(Icons.save),
         ),
       ],
     );
   }
 
-  Widget _buildBody() {
-    _controller.text = _object.content;
+  Widget _buildBody(BuildContext context) {
+    ChapterDetailViewModel viewModel = Provider.of<ChapterDetailViewModel>(context, listen: false);
+    _controller.text = viewModel.object.content;
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: TextField(

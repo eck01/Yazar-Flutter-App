@@ -1,21 +1,40 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:yazar/constants.dart';
 import 'package:yazar/local_database.dart';
 import 'package:yazar/model/book.dart';
 import 'package:yazar/view/chapters_view.dart';
+import 'package:yazar/view_model/chapters_view_model.dart';
 
-class BooksViewModel {
+class BooksViewModel with ChangeNotifier {
   BooksViewModel() {
     _categories.addAll(Constants.categories.keys);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      readBooks();
+    });
   }
 
   final LocalDatabase _database = LocalDatabase();
-  List<Book> _books = [];
-  int _category = -1;
-  final List<int> _categories = [-1];
-  final List<int> _checkboxList = [];
 
-  Future<void> _createBook(BuildContext context) async {
+  List<Book> _books = [];
+  List<Book> get books => _books;
+
+  int _category = -1;
+  int get category => _category;
+  set category(int index) {
+    _category = index;
+    notifyListeners();
+    readBooks();
+  }
+
+  final List<int> _categories = [-1];
+  List<int> get categories => _categories;
+
+  final List<int> _checkboxList = [];
+  List<int> get checkboxList => _checkboxList;
+
+  Future<void> createBook(BuildContext context) async {
     List<dynamic>? response = await _buildDialog(context, 'Kitap Ekle');
 
     if (response != null && response.length > 1) {
@@ -25,16 +44,19 @@ class BooksViewModel {
       Book object = Book(text, DateTime.now(), index);
       int result = await _database.createBook(object);
       if (result > -1) {
-        // setState(() {});
+        object.id = result;
+        _books.add(object);
+        notifyListeners();
       }
     }
   }
 
-  Future<void> _readBooks() async {
+  Future<void> readBooks() async {
     _books = await _database.readBooks(_category);
+    notifyListeners();
   }
 
-  Future<void> _updateBook(BuildContext context, int index) async {
+  Future<void> updateBook(BuildContext context, int index) async {
     Book object = _books[index];
     List<dynamic>? response = await _buildDialog(context, 'Kitap Güncelle', bookName: object.name, bookCategory: object.category);
 
@@ -43,20 +65,17 @@ class BooksViewModel {
       int index = response[1];
 
       if (text != object.name || index != object.category) {
-        object.name = text;
-        object.category = index;
-        int result = await _database.updateBook(object);
-        if (result > 0) {
-          // setState(() {});
-        }
+        object.update(text, index);
+        await _database.updateBook(object);
       }
     }
   }
 
-  Future<void> _deleteBooks() async {
+  Future<void> deleteBooks() async {
     int result = await _database.deleteBooks(_checkboxList);
     if (result > 0) {
-      // setState(() {});
+      _books.removeWhere((object) => _checkboxList.contains(object.id));
+      notifyListeners();
     }
   }
 
@@ -123,10 +142,13 @@ class BooksViewModel {
     );
   }
 
-  void _openView(BuildContext context, Book object) {
+  void openView(BuildContext context, Book object) {
     MaterialPageRoute route = MaterialPageRoute(
       builder: (context) {
-        return const ChaptersView();
+        return ChangeNotifierProvider(
+          create: (context) => ChaptersViewModel(object),
+          child: const ChaptersView(),
+        );
       },
     );
 

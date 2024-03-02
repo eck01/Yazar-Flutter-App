@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:yazar/model/chapter.dart';
+import 'package:yazar/view_model/chapters_view_model.dart';
 
 class ChaptersView extends StatelessWidget {
   const ChaptersView({super.key});
@@ -6,62 +9,69 @@ class ChaptersView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _buildAppBar(),
+      appBar: _buildAppBar(context),
       body: _buildBody(),
-      floatingActionButton: _buildFloatingActionButton(),
+      floatingActionButton: _buildFloatingActionButton(context),
     );
   }
 
-  AppBar _buildAppBar() {
+  AppBar _buildAppBar(BuildContext context) {
+    ChaptersViewModel viewModel = Provider.of<ChaptersViewModel>(context, listen: false);
     return AppBar(
-      title: Text(_book.name),
+      title: Text(viewModel.book.name),
     );
   }
 
   Widget _buildBody() {
-    return FutureBuilder(
-      future: _readChapters(),
-      builder: _buildListView,
-    );
-  }
-
-  Widget _buildListView(BuildContext context, AsyncSnapshot<void> snapshot) {
-    return ListView.builder(
-      itemCount: _chapters.length,
-      itemBuilder: _buildListItem,
+    return Consumer<ChaptersViewModel>(
+      builder: (context, viewModel, child) => ListView.builder(
+        itemCount: viewModel.chapters.length,
+        itemBuilder: (context, index) {
+          return ChangeNotifierProvider.value(
+            value: viewModel.chapters[index],
+            child: _buildListItem(context, index),
+          );
+        },
+      ),
     );
   }
 
   Widget _buildListItem(BuildContext context, int index) {
-    return ListTile(
-      leading: CircleAvatar(child: Text(_chapters[index].id.toString())),
-      title: Text(_chapters[index].title),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            onPressed: () {
-              _updateChapter(index);
-            },
-            icon: const Icon(Icons.edit),
-          ),
-          IconButton(
-            onPressed: () {
-              _deleteChapter(index);
-            },
-            icon: const Icon(Icons.delete),
-          ),
-        ],
+    ChaptersViewModel viewModel = Provider.of<ChaptersViewModel>(context, listen: false);
+    return Consumer<Chapter>(
+      builder: (context, object, child) => ListTile(
+        leading: CircleAvatar(child: Text(object.id.toString())),
+        title: Text(object.title),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              onPressed: () {
+                viewModel.updateChapter(context, index);
+              },
+              icon: const Icon(Icons.edit),
+            ),
+            IconButton(
+              onPressed: () {
+                viewModel.deleteChapter(index);
+              },
+              icon: const Icon(Icons.delete),
+            ),
+          ],
+        ),
+        onTap: () {
+          viewModel.openView(context, object);
+        },
       ),
-      onTap: () {
-        _openView(_chapters[index]);
-      },
     );
   }
 
-  Widget _buildFloatingActionButton() {
+  Widget _buildFloatingActionButton(BuildContext context) {
+    ChaptersViewModel viewModel = Provider.of<ChaptersViewModel>(context, listen: false);
     return FloatingActionButton(
-      onPressed: _createChapter,
+      onPressed: () {
+        viewModel.createChapter(context);
+      },
       child: const Icon(Icons.add),
     );
   }

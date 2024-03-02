@@ -1,17 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:yazar/local_database.dart';
 import 'package:yazar/model/book.dart';
 import 'package:yazar/model/chapter.dart';
 import 'package:yazar/view/chapter_detail_view.dart';
+import 'package:yazar/view_model/chapter_detail_view_model.dart';
 
-class ChaptersViewModel {
-  ChaptersViewModel(this._book);
+class ChaptersViewModel with ChangeNotifier {
+  ChaptersViewModel(this._book) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      readChapters();
+    });
+  }
 
   final Book _book;
-  final LocalDatabase _database = LocalDatabase();
-  List<Chapter> _chapters = [];
+  Book get book => _book;
 
-  Future<void> _createChapter(BuildContext context) async {
+  final LocalDatabase _database = LocalDatabase();
+
+  List<Chapter> _chapters = [];
+  List<Chapter> get chapters => _chapters;
+
+  Future<void> createChapter(BuildContext context) async {
     int? bookId = _book.id;
     String? text = await _buildDialog(context, 'Bölüm Ekle');
 
@@ -19,28 +29,28 @@ class ChaptersViewModel {
       Chapter object = Chapter(bookId, text);
       int result = await _database.createChapter(object);
       if (result > -1) {
-        // setState(() {});
+        object.id = result;
+        _chapters.add(object);
+        notifyListeners();
       }
     }
   }
 
-  Future<void> _readChapters() async {
+  Future<void> readChapters() async {
     int? bookId = _book.id;
     if (bookId != null) {
       _chapters = await _database.readChapters(bookId);
+      notifyListeners();
     }
   }
 
-  Future<void> _updateChapter(BuildContext context, int index) async {
+  Future<void> updateChapter(BuildContext context, int index) async {
     String? text = await _buildDialog(context, 'Bölüm Güncelle');
 
     if (text != null) {
       Chapter object = _chapters[index];
-      object.title = text;
-      int result = await _database.updateChapter(object);
-      if (result > 0) {
-        // setState(() {});
-      }
+      object.update(text);
+      await _database.updateChapter(object);
     }
   }
 
@@ -76,18 +86,22 @@ class ChaptersViewModel {
     );
   }
 
-  Future<void> _deleteChapter(int index) async {
+  Future<void> deleteChapter(int index) async {
     Chapter object = _chapters[index];
     int result = await _database.deleteChapter(object);
     if (result > 0) {
-      // setState(() {});
+      _chapters.removeAt(index);
+      notifyListeners();
     }
   }
 
-  void _openView(BuildContext context, Chapter object) {
+  void openView(BuildContext context, Chapter object) {
     MaterialPageRoute route = MaterialPageRoute(
       builder: (context) {
-        return ChapterDetailView();
+        return ChangeNotifierProvider(
+          create: (context) => ChapterDetailViewModel(object),
+          child: ChapterDetailView(),
+        );
       },
     );
 

@@ -1,4 +1,6 @@
-class Chapter {
+import 'package:flutter/material.dart';
+
+class Chapter with ChangeNotifier {
   Chapter(this.bookId, this.title) : content = '';
 
   dynamic id;
@@ -19,5 +21,10 @@ class Chapter {
       'title': title,
       'content': content,
     };
+  }
+
+  void update(String value) {
+    title = value;
+    notifyListeners();
   }
 }
