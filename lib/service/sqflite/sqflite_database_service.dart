@@ -1,17 +1,10 @@
-import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'package:sqflite/sqflite.dart';
 import 'package:yazar/model/book.dart';
 import 'package:yazar/model/chapter.dart';
+import 'package:yazar/service/base/database_service.dart';
 
-class LocalDatabase {
-  LocalDatabase._privateConstructor();
-
-  static final LocalDatabase _object = LocalDatabase._privateConstructor();
-
-  factory LocalDatabase() {
-    return _object;
-  }
-
+class SqfliteDatabaseService implements DatabaseService {
   Database? _database;
 
   final String _booksTable = 'books';
@@ -76,7 +69,8 @@ class LocalDatabase {
     }
   }
 
-  Future<int> createBook(Book object) async {
+  @override
+  Future createBook(Book object) async {
     Database? database = await _fetchDatabase();
 
     if (database != null) {
@@ -86,6 +80,7 @@ class LocalDatabase {
     }
   }
 
+  @override
   Future<List<Book>> readBooks(int index) async {
     Database? database = await _fetchDatabase();
     String? sqlWhere;
@@ -123,6 +118,7 @@ class LocalDatabase {
     return Book.fromMap(dataMap);
   }
 
+  @override
   Future<int> updateBook(Book object) async {
     Database? database = await _fetchDatabase();
 
@@ -147,7 +143,8 @@ class LocalDatabase {
     return dataMap;
   }
 
-  Future<int> deleteBooks(List<int> indexList) async {
+  @override
+  Future<int> deleteBooks(List indexList) async {
     Database? database = await _fetchDatabase();
 
     if (database != null && indexList.isNotEmpty) {
@@ -171,7 +168,8 @@ class LocalDatabase {
     }
   }
 
-  Future<int> createChapter(Chapter object) async {
+  @override
+  Future createChapter(Chapter object) async {
     Database? database = await _fetchDatabase();
 
     if (database != null) {
@@ -181,7 +179,8 @@ class LocalDatabase {
     }
   }
 
-  Future<List<Chapter>> readChapters(int bookId) async {
+  @override
+  Future<List<Chapter>> readChapters(bookId) async {
     Database? database = await _fetchDatabase();
     List<Chapter> list = [];
 
@@ -201,6 +200,7 @@ class LocalDatabase {
     return list;
   }
 
+  @override
   Future<int> updateChapter(Chapter object) async {
     Database? database = await _fetchDatabase();
 
@@ -216,6 +216,7 @@ class LocalDatabase {
     }
   }
 
+  @override
   Future<int> deleteChapter(Chapter object) async {
     Database? database = await _fetchDatabase();
 

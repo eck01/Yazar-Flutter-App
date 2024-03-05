@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:yazar/constants.dart';
-import 'package:yazar/local_database.dart';
+import 'package:yazar/repository/database_repository.dart';
+import 'package:yazar/tools/constants.dart';
 import 'package:yazar/model/book.dart';
+import 'package:yazar/tools/locator.dart';
 import 'package:yazar/view/chapters_view.dart';
 import 'package:yazar/view_model/chapters_view_model.dart';
 
@@ -15,7 +16,7 @@ class BooksViewModel with ChangeNotifier {
     });
   }
 
-  final LocalDatabase _database = LocalDatabase();
+  final DatabaseRepository _databaseRepository = locator<DatabaseRepository>();
 
   List<Book> _books = [];
   List<Book> get books => _books;
@@ -42,7 +43,7 @@ class BooksViewModel with ChangeNotifier {
       int index = response[1];
 
       Book object = Book(text, DateTime.now(), index);
-      int result = await _database.createBook(object);
+      int result = await _databaseRepository.createBook(object);
       if (result > -1) {
         object.id = result;
         _books.add(object);
@@ -52,7 +53,7 @@ class BooksViewModel with ChangeNotifier {
   }
 
   Future<void> readBooks() async {
-    _books = await _database.readBooks(_category);
+    _books = await _databaseRepository.readBooks(_category);
     notifyListeners();
   }
 
@@ -66,13 +67,13 @@ class BooksViewModel with ChangeNotifier {
 
       if (text != object.name || index != object.category) {
         object.update(text, index);
-        await _database.updateBook(object);
+        await _databaseRepository.updateBook(object);
       }
     }
   }
 
   Future<void> deleteBooks() async {
-    int result = await _database.deleteBooks(_checkboxList);
+    int result = await _databaseRepository.deleteBooks(_checkboxList);
     if (result > 0) {
       _books.removeWhere((object) => _checkboxList.contains(object.id));
       notifyListeners();

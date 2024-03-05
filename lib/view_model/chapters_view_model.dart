@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:yazar/local_database.dart';
 import 'package:yazar/model/book.dart';
 import 'package:yazar/model/chapter.dart';
+import 'package:yazar/repository/database_repository.dart';
+import 'package:yazar/tools/locator.dart';
 import 'package:yazar/view/chapter_detail_view.dart';
 import 'package:yazar/view_model/chapter_detail_view_model.dart';
 
@@ -16,7 +17,7 @@ class ChaptersViewModel with ChangeNotifier {
   final Book _book;
   Book get book => _book;
 
-  final LocalDatabase _database = LocalDatabase();
+  final DatabaseRepository _databaseRepository = locator<DatabaseRepository>();
 
   List<Chapter> _chapters = [];
   List<Chapter> get chapters => _chapters;
@@ -27,7 +28,7 @@ class ChaptersViewModel with ChangeNotifier {
 
     if (bookId != null && text != null) {
       Chapter object = Chapter(bookId, text);
-      int result = await _database.createChapter(object);
+      int result = await _databaseRepository.createChapter(object);
       if (result > -1) {
         object.id = result;
         _chapters.add(object);
@@ -39,7 +40,7 @@ class ChaptersViewModel with ChangeNotifier {
   Future<void> readChapters() async {
     int? bookId = _book.id;
     if (bookId != null) {
-      _chapters = await _database.readChapters(bookId);
+      _chapters = await _databaseRepository.readChapters(bookId);
       notifyListeners();
     }
   }
@@ -50,7 +51,7 @@ class ChaptersViewModel with ChangeNotifier {
     if (text != null) {
       Chapter object = _chapters[index];
       object.update(text);
-      await _database.updateChapter(object);
+      await _databaseRepository.updateChapter(object);
     }
   }
 
@@ -88,7 +89,7 @@ class ChaptersViewModel with ChangeNotifier {
 
   Future<void> deleteChapter(int index) async {
     Chapter object = _chapters[index];
-    int result = await _database.deleteChapter(object);
+    int result = await _databaseRepository.deleteChapter(object);
     if (result > 0) {
       _chapters.removeAt(index);
       notifyListeners();
